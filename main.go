@@ -36,10 +36,17 @@ func NewServer(cfg Config) *Server {
 	}
 }
 
+func (s *Server) handleRawMessage(rawMsg []byte) error {
+	fmt.Println(string(rawMsg))
+	return nil
+}
 func (s *Server) loop() {
 	for {
 		select {
 		case rawMsg := <-s.msgCh:
+			if err := s.handleRawMessage(rawMsg); err != nil {
+				log.Println("handleRawMessage:", err)
+			}
 			fmt.Println(rawMsg)
 		case <-s.quitCh:
 			return
