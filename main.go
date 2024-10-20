@@ -38,6 +38,14 @@ func NewServer(cfg Config) *Server {
 
 func (s *Server) handleRawMessage(rawMsg []byte) error {
 	fmt.Println(string(rawMsg))
+	cmd, err := parseCommand(string(rawMsg))
+	if err != nil {
+		return err
+	}
+	switch cmd.(type) {
+	case SetCommand:
+		fmt.Println("Set Command")
+	}
 	return nil
 }
 func (s *Server) loop() {
@@ -63,7 +71,7 @@ func (s *Server) Start() error {
 	}
 	s.ln = ln
 	go s.loop()
-	slog.Info("server running on", s.ListenAddr)
+	//slog.Info("server running on", s.ListenAddr)
 	return s.acceptLoop()
 
 }
