@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	client2 "godis/client"
 	"log"
 	"log/slog"
 	"net"
+	"sync"
+	"time"
 )
 
 const defaultListenAdds = ":5001"
@@ -16,6 +20,9 @@ type Server struct {
 	addPeerCh chan *Peer
 	quitCh    chan struct{}
 	msgCh     chan []byte
+
+	mu sync.Mutex
+	kv KV
 }
 
 type Config struct {
@@ -42,9 +49,9 @@ func (s *Server) handleRawMessage(rawMsg []byte) error {
 	if err != nil {
 		return err
 	}
-	switch cmd.(type) {
+	switch v := cmd.(type) {
 	case SetCommand:
-		fmt.Println("Set Command")
+		return s.kv.Set(v.key, v.val)
 	}
 	return nil
 }
@@ -100,6 +107,24 @@ func (s *Server) handleConn(conn net.Conn) {
 }
 
 func main() {
+
 	server := NewServer(Config{})
-	log.Fatal(server.Start())
+
+	go func() {
+		log.Fatal(server.Start())
+	}()
+	time.Sleep(time.Second)
+
+	client := client2.NewClient("localhost:5001")
+	count := 10
+	for i := 0; i < count; i++ {
+		if err := client.Set(context.Background(), fmt.Sprintf("foo_%d", i), fmt.Sprintf("bar_%d", i)); err != nil {
+			slog.Error("set client error:", err)
+		}
+	}
+	time.Sleep(time.Second)
+	fmt.Println(server.kv.data)
+
+	select {}
+
 }
